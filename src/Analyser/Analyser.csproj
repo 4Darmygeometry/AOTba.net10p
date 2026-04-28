@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <AssemblyName>AOTba.net10p.Analyser</AssemblyName>
+    <RootNamespace>AOTba.net10p.Analyser</RootNamespace>
+    <Version>1.0.11</Version>
+    <Description>AOTba.net10p.Analyser - AOT-friendly Chinese text analysis library.</Description>
+    <Company>佛山市天昊极限挑战活动策划有限公司</Company>
+    <Authors>andersc,4Darmygeometry</Authors>
+    <Copyright>Copyright © 4Darmygeometry 2026</Copyright>
+    <RepositoryUrl>https://github.com/4Darmygeometry/AOTba.net10p/</RepositoryUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>chinese;nlp;analysis;jieba;aot;GB18030</PackageTags>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</IsAotCompatible>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Segmenter\Segmenter.csproj" />
+  </ItemGroup>
+
+</Project>

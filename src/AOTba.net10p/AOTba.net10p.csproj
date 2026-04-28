@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>AOTba.net10p</RootNamespace>
+    <Version>1.0.11</Version>
+    <Description>AOTba.net10p - 支持AOT编译的jieba.NET中文分词库。支持emoji分词、繁体中文。</Description>
+    <Company>4Darmygeometry</Company>
+    <Authors>andersc,4Darmygeometry</Authors>
+    <Copyright>Copyright © 4Darmygeometry 2026</Copyright>
+    <RepositoryUrl>https://github.com/4Darmygeometry/AOTba.net10p/</RepositoryUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>chinese;nlp;segmentation;jieba;aot;emoji;traditional-chinese;GB18030</PackageTags>
+    <PackageId>AOTba.net10p</PackageId>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <NuspecFile>AOTba.net10p.nuspec</NuspecFile>
+    <NuspecProperties>version=$(Version);Configuration=$(Configuration)</NuspecProperties>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Segmenter\Segmenter.csproj" PrivateAssets="All" />
+    <ProjectReference Include="..\Analyser\Analyser.csproj" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>
