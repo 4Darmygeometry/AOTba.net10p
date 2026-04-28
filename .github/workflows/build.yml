@@ -1,0 +1,73 @@
+name: Build, Test, and Publish
+
+on:
+  push:
+    branches: [ master, main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master, main ]
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  NUGET_XMLDOC_MODE: skip
+
+jobs:
+  ci:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Extract version from tag or use default
+        id: get_version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            # 从 csproj 提取默认版本
+            VERSION=$(grep -oP '<Version>\K[^<]+' src/AOTba.net10p/AOTba.net10p.csproj || echo "1.0.0")
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Build all projects
+        run: |
+          dotnet build src/Segmenter/Segmenter.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build src/Analyser/Analyser.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build src/AOTba.net10p/AOTba.net10p.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build src/Segmenter.Cli/Segmenter.Cli.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build test/AotTest/AotTest.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+          dotnet build test/Segmenter.Tests/Segmenter.Tests.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }}
+
+      - name: Run tests
+        run: dotnet test test/Segmenter.Tests/Segmenter.Tests.csproj -c Release -v normal
+
+      - name: Publish AOT
+        run: dotnet publish test/AotTest/AotTest.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true
+
+      - name: Run AOT test
+        run: test/AotTest/bin/Release/net10.0/win-x64/publish/JiebaNet.AotTest.exe
+
+      - name: Publish TimeRecognizerDemo
+        run: dotnet publish test/TimeRecognizerDemo/TimeRecognizerDemo/TimeRecognizerDemo.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true
+
+      - name: Run TimeRecognizerDemo test
+        run: test/TimeRecognizerDemo/TimeRecognizerDemo/bin/Release/net10.0/win-x64/publish/TimeRecognizerDemo.exe
+
+      - name: Pack AOTba.net10p
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: dotnet pack src/AOTba.net10p/AOTba.net10p.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }} --output ./artifacts
+
+      - name: Publish to NuGet.org
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
