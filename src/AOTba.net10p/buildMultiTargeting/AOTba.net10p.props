@@ -7,7 +7,7 @@
 
   <Target Name="CopyJiebaResources" AfterTargets="Build" Condition="!Exists('$(OutDir)Resources\dict.txt')">
     <Copy SourceFiles="@(JiebaResourceFiles)" DestinationFolder="$(OutDir)Resources\%(RecursiveDir)" />
-    <Message Text="已复制AOTba词库文件到输出目录" Importance="high" />
+    <Message Text="已复制AOTba.net10p词库文件到输出目录" Importance="high" />
   </Target>
 
 </Project>
