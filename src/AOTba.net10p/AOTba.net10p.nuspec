@@ -10,6 +10,7 @@
     <license type="expression">Apache-2.0</license>
     <projectUrl>https://github.com/4Darmygeometry/AOTba.net10p/</projectUrl>
     <readme>README.md</readme>
+    <icon>AOTba.png</icon>
     <description>AOTba.net10p是jieba中文分词的.NET版本（C#实现），支持AOT编译。支持emoji分词、繁体中文。
 
 基于jieba 0.42，提供与jieba基本一致的功能与接口，但不支持其最新的paddle模式。关于jieba的实现思路，可以看看这篇wiki里提到的资料。
@@ -29,6 +30,7 @@
   </metadata>
   <files>
     <file src="..\..\README.md" target="" />
+    <file src="AOTba.png" target="" />
     <file src="..\Segmenter\bin\Release\net10.0\AOTba.net10p.Segmenter.dll" target="lib\net10.0\" />
     <file src="..\Analyser\bin\Release\net10.0\AOTba.net10p.Analyser.dll" target="lib\net10.0\" />
     <file src="..\Segmenter\Resources\**\*" target="content\Resources\" />

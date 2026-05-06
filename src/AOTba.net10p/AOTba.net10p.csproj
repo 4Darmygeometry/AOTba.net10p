@@ -12,6 +12,7 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>chinese;nlp;segmentation;jieba;aot;emoji;traditional-chinese;GB18030</PackageTags>
     <PackageId>AOTba.net10p</PackageId>
+    <PackageIcon>AOTba.png</PackageIcon>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
@@ -20,6 +21,10 @@
     <NuspecFile>AOTba.net10p.nuspec</NuspecFile>
     <NuspecProperties>version=$(Version);Configuration=$(Configuration)</NuspecProperties>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="AOTba.png" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Segmenter\Segmenter.csproj" PrivateAssets="All" />
