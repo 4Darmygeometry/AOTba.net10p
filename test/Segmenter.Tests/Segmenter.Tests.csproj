@@ -5,7 +5,7 @@
     <AssemblyName>AOTba.net10p.Segmenter.Tests</AssemblyName>
     <RootNamespace>AOTba.net10p.Segmenter.Tests</RootNamespace>
     <DebugType>portable</DebugType>
-    <Version>1.0.11</Version>
+    <Version>1.1.4</Version>
     <Description>AOTba.net10p.Segmenter.Tests</Description>
     <Company>佛山市天昊极限挑战活动策划有限公司</Company>
     <Authors>andersc,4Darmygeometry</Authors>
