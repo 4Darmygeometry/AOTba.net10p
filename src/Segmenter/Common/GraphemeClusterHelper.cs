@@ -14,17 +14,105 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 将字符串分割为Grapheme Cluster列表
         /// 每个Grapheme Cluster代表一个用户感知的字符（包括复杂emoji序列）
+        /// .NET Framework 4.8的StringInfo不支持ZWJ序列，需要自定义分割逻辑
         /// </summary>
-        public static List<string> SplitToGraphemes(string text)
+        internal static List<string> SplitToGraphemes(string text)
         {
             var result = new List<string>();
             if (string.IsNullOrEmpty(text))
                 return result;
 
+            // 先用StringInfo做基础分割
+            var elements = new List<string>();
             var enumerator = StringInfo.GetTextElementEnumerator(text);
             while (enumerator.MoveNext())
             {
-                result.Add(enumerator.GetTextElement());
+                elements.Add(enumerator.GetTextElement());
+            }
+
+            // .NET Framework 4.8的StringInfo会将ZWJ序列拆开
+            // 需要将ZWJ（U+200D）与前后的emoji元素合并为单个字形簇
+            // 使用IsEmojiGrapheme共用逻辑判断emoji基础字符
+            var i = 0;
+            while (i < elements.Count)
+            {
+                var current = elements[i];
+
+                // ZWJ连接符合并到前一个字形簇
+                if (current.Length > 0 && current[0] == '\u200D')
+                {
+                    if (result.Count > 0)
+                        result[result.Count - 1] += current;
+                    else
+                        result.Add(current);
+                    i++;
+                    continue;
+                }
+
+                // 变体选择符合并到前一个字形簇
+                if (current.Length == 1 && (current[0] == '\uFE0F' || current[0] == '\uFE0E'))
+                {
+                    if (result.Count > 0)
+                        result[result.Count - 1] += current;
+                    else
+                        result.Add(current);
+                    i++;
+                    continue;
+                }
+
+                // Emoji基础字符：使用IsEmojiGrapheme共用逻辑判断，启动合并循环
+                if (IsEmojiGrapheme(current))
+                {
+                    var cluster = current;
+                    i++;
+
+                    // 向后合并：ZWJ + emoji/变体选择符/肤色修饰符 的重复模式
+                    while (i < elements.Count)
+                    {
+                        var next = elements[i];
+                        // ZWJ连接符：合并
+                        if (next.Length > 0 && next[0] == '\u200D')
+                        {
+                            cluster += next;
+                            i++;
+                            // ZWJ后面应该跟着emoji基础字符或变体选择符
+                            if (i < elements.Count)
+                            {
+                                var afterZwj = elements[i];
+                                if (IsEmojiGrapheme(afterZwj) || (afterZwj.Length == 1 && (afterZwj[0] == '\uFE0F' || afterZwj[0] == '\uFE0E')))
+                                {
+                                    cluster += afterZwj;
+                                    i++;
+                                }
+                            }
+                        }
+                        // 变体选择符：合并
+                        else if (next.Length == 1 && (next[0] == '\uFE0F' || next[0] == '\uFE0E'))
+                        {
+                            cluster += next;
+                            i++;
+                        }
+                        // 肤色修饰符（U+1F3FB~U+1F3FF）：合并
+                        else if (next.Length == 2 && char.IsSurrogatePair(next[0], next[1])
+                                 && char.ConvertToUtf32(next[0], next[1]) >= 0x1F3FB
+                                 && char.ConvertToUtf32(next[0], next[1]) <= 0x1F3FF)
+                        {
+                            cluster += next;
+                            i++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    result.Add(cluster);
+                    continue;
+                }
+
+                // 普通字符：直接添加
+                result.Add(current);
+                i++;
             }
 
             return result;
@@ -33,7 +121,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 将Span分割为Grapheme Cluster列表
         /// </summary>
-        public static List<string> SplitToGraphemes(ReadOnlySpan<char> text)
+        internal static List<string> SplitToGraphemes(ReadOnlySpan<char> text)
         {
             return SplitToGraphemes(text.ToString());
         }
@@ -41,7 +129,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 获取字符串中的Grapheme Cluster数量
         /// </summary>
-        public static int GetGraphemeCount(string text)
+        internal static int GetGraphemeCount(string text)
         {
             if (string.IsNullOrEmpty(text))
                 return 0;
@@ -52,7 +140,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 获取指定Grapheme索引对应的char起始位置
         /// </summary>
-        public static int GetCharIndexFromGraphemeIndex(string text, int graphemeIndex)
+        internal static int GetCharIndexFromGraphemeIndex(string text, int graphemeIndex)
         {
             if (string.IsNullOrEmpty(text) || graphemeIndex < 0)
                 return -1;
@@ -76,7 +164,7 @@ namespace JiebaNet.Segmenter.Common
         /// 检查Grapheme Cluster是否为emoji
         /// 通过检查是否包含emoji范围的字符来判断
         /// </summary>
-        public static bool IsEmojiGrapheme(string grapheme)
+        internal static bool IsEmojiGrapheme(string grapheme)
         {
             if (string.IsNullOrEmpty(grapheme))
                 return false;
@@ -191,7 +279,7 @@ namespace JiebaNet.Segmenter.Common
         /// <summary>
         /// 获取Grapheme Cluster的详细信息
         /// </summary>
-        public static GraphemeInfo GetGraphemeInfo(string grapheme)
+        internal static GraphemeInfo GetGraphemeInfo(string grapheme)
         {
             var info = new GraphemeInfo
             {
