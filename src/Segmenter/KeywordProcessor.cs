@@ -141,6 +141,13 @@ namespace JiebaNet.Segmenter
                             keywordsExtracted.Add(new TextSpan(text: longestFound, start: seqStartPos, end: idx));
                         }
 
+                        // 如果匹配结束位置是高代理项（可能是下一个emoji关键词的开始），
+                        // 回退idx让外层循环处理这个位置，避免拆散代理对导致emoji关键词丢失
+                        if (isLongerFound && seqEndPos < sentLen && char.IsHighSurrogate(sentence[seqEndPos]))
+                        {
+                            idx = seqEndPos - 1;
+                        }
+
                         currentState = KeywordTrie;
                         resetCurrentDict = true;
                     }
