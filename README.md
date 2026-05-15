@@ -703,10 +703,13 @@ using System.Text;
 
 class TimeRecognizerDemo
 {
-    static void Main(string[] args)
+    private static int _passedCount = 0;
+    private static int _failedCount = 0;
+
+    static int Main(string[] args)
     {
         Console.OutputEncoding = Encoding.UTF8;
-        Console.WriteLine("=== AOTba ITimeRecognizer 实体提取演示 ===\n");
+        Console.WriteLine("=== AOTba ITimeRecognizer 实体提取测试 ===\n");
 
         ITimeRecognizer recognizer = new RegexTimeRecognizer();
 
@@ -716,7 +719,16 @@ class TimeRecognizerDemo
                       "联调安排在Q2，最终版本用v2.5.0-rc2，" +
                       "deadline是2025-06-30，有问题随时找我，" +
                       "文档发你邮箱了，参考https://wiki.company.com/project-x";
-        ExtractAndShow(recognizer, workText);
+        var workExpected = new[]
+        {
+            ("下周四上午10点", "relativedate"),
+            ("3个工作日", "duration"),
+            ("Q2", "quarter"),
+            ("v2.5.0-rc2", "version"),
+            ("deadline是2025-06-30", "deadline"),
+            ("https://wiki.company.com/project-x", "domain"),
+        };
+        RunTest(recognizer, workText, workExpected);
 
         // ========== 2. 社交聊天场景 ==========
         Console.WriteLine("【场景二：朋友约饭】");
@@ -724,7 +736,13 @@ class TimeRecognizerDemo
                       "要是堵车就推迟到8点，" +
                       "对了，那家店在𧒽岗地铁站B口，" +
                       "上次吃的𰻝𰻝面真不错😋";
-        ExtractAndShow(recognizer, chatText);
+        var chatExpected = new[]
+        {
+            ("今晚8点半", "relativedate"),
+            ("7:15", "time"),
+            ("8点", "time"),
+        };
+        RunTest(recognizer, chatText, chatExpected);
 
         // ========== 3. 电商客服场景 ==========
         Console.WriteLine("【场景三：售后沟通】");
@@ -733,7 +751,13 @@ class TimeRecognizerDemo
                          "促销价是原价的85%，" +
                          "商品版本是2024款，" +
                          "有问题请联系www.taobao.com/shop/help";
-        ExtractAndShow(recognizer, serviceText);
+        var serviceExpected = new[]
+        {
+            ("明天下午", "relativedate"),
+            ("85%", "percentage"),
+            ("www.taobao.com/shop/help", "domain"),
+        };
+        RunTest(recognizer, serviceText, serviceExpected);
 
         // ========== 4. 技术讨论场景 ==========
         Console.WriteLine("【场景四：技术方案评审】");
@@ -743,7 +767,16 @@ class TimeRecognizerDemo
                       "部署脚本在https://github.com/team/repo/blob/main/deploy.sh，" +
                       "当前运行的是v3.2.1-beta2，" +
                       "计划春节后上线";
-        ExtractAndShow(recognizer, techText);
+        var techExpected = new[]
+        {
+            ("14:30", "time"),
+            ("15:45", "time"),
+            ("99.9%", "percentage"),
+            ("https://github.com/team/repo/blob/main/deploy.sh", "domain"),
+            ("v3.2.1-beta2", "version"),
+            ("春节", "festival"),
+        };
+        RunTest(recognizer, techText, techExpected);
 
         // ========== 5. 家庭群聊场景 ==========
         Console.WriteLine("【场景五：家庭群通知】");
@@ -752,7 +785,15 @@ class TimeRecognizerDemo
                         "大概十九点到北京西站，" +
                         "记得熬腊八粥，" +
                         "高铁票在12306.cn买的";
-        ExtractAndShow(recognizer, familyText);
+        var familyExpected = new[]
+        {
+            ("春节", "festival"),
+            ("2025年1月29日", "datetimex"),
+            ("腊月二十八晚上9点", "lunardate"),
+            ("十九点", "time"),
+            ("12306.cn", "domain"),
+        };
+        RunTest(recognizer, familyText, familyExpected);
 
         // ========== 6. 新闻资讯场景 ==========
         Console.WriteLine("【场景六：新闻摘要】");
@@ -760,7 +801,15 @@ class TimeRecognizerDemo
                       "届时北京时间同步直播，" +
                       "活动持续约2个小时，" +
                       "详情见www.cctv.com/2024/guoqing";
-        ExtractAndShow(recognizer, newsText);
+        var newsExpected = new[]
+        {
+            ("75周年", "anniversary"),
+            ("10月1日上午10点", "datetimex"),
+            ("北京时间", "timezone"),
+            ("2个小时", "duration"),
+            ("www.cctv.com/2024/guoqing", "domain"),
+        };
+        RunTest(recognizer, newsText, newsExpected);
 
         // ========== 7. 跨场景复杂混合 ==========
         Console.WriteLine("【场景七：混合复杂文本】");
@@ -773,66 +822,151 @@ class TimeRecognizerDemo
                        "占比30%，" +
                        "到货时间是明天下午4:30，" +
                        "有问题微信我，我随时在线👍";
-        ExtractAndShow(recognizer, mixedText);
+        var mixedExpected = new[]
+        {
+            ("v1.3.0-preview1", "version"),
+            ("下周三下午3点", "relativedate"),
+            ("2025-05-20", "datetime"),
+            ("5个工作日", "duration"),
+            ("https://confluence.company.com/display/TEAM/Spec", "domain"),
+            ("1:1:1", "ratio"),
+            ("30%", "percentage"),
+            ("明天下午4:30", "relativedate"),
+        };
+        RunTest(recognizer, mixedText, mixedExpected);
 
         // ========== 8. 实体脱敏演示 ==========
-        Console.WriteLine("=== 实体脱敏演示 ===\n");
+        Console.WriteLine("【场景八：实体脱敏】");
         var sensitive = "张先生的身份证号是11010119900101xxxx，" +
                        "预约了明天上午9点的专家号，" +
                        "费用结算在www.hospital.com/pay，" +
                        "药品版本是v2.0-batch3";
-        Console.WriteLine($"原文: {sensitive}");
-        var entities = recognizer.Recognize(sensitive);
-        var masked = MaskEntities(sensitive, entities);
-        Console.WriteLine($"脱敏: {masked}\n");
+        var sensitiveExpected = new[]
+        {
+            ("明天上午9点", "relativedate"),
+            ("www.hospital.com/pay", "domain"),
+            ("v2.0-batch3", "version"),
+        };
+        RunTest(recognizer, sensitive, sensitiveExpected);
+
+        // 脱敏后结果显示
+        var sensitiveEntities = recognizer.Recognize(sensitive);
+        var masked = MaskEntities(sensitive, sensitiveEntities);
+        Console.WriteLine($"  脱敏前: {sensitive}");
+        Console.WriteLine($"  脱敏后: {masked}");
+        Console.WriteLine();
 
         // ========== 9. 按类型筛选演示 ==========
-        Console.WriteLine("=== 按类型筛选：仅提取时间实体 ===\n");
+        Console.WriteLine("【场景九：按类型筛选】");
         var filterText = "项目截止2025-06-30，每周三下午2:30开会，" +
                         "使用v3.2.1版本，参考https://docs.example.com，" +
                         "北京时间九点整发布";
-        var all = recognizer.Recognize(filterText);
-        var timeOnly = all.Where(e =>
-            e.Type is "datetime" or "time" or "relativedate" or
-                      "timerange" or "deadline" or "timezone" or "weekday"
-        ).OrderBy(e => e.Start);
-
-        Console.WriteLine($"文本: {filterText}");
-        foreach (var e in timeOnly)
+        var filterExpected = new[]
         {
-            Console.WriteLine($"  [{e.Start}-{e.End}] {e.Type,-12} => {e.Text}");
-        }
+            ("截止2025-06-30", "deadline"),
+            ("周三下午2:30", "relativedate"),
+            ("v3.2.1版本", "version"),
+            ("https://docs.example.com", "domain"),
+            ("北京时间", "timezone"),
+            ("九点整", "time"),
+        };
+        RunTest(recognizer, filterText, filterExpected);
+
+        // ========== 10. 中文数字年份识别 ==========
+        Console.WriteLine("【场景十：中文数字年份识别】");
+        var chineseYearText = "我是二零一零年出生的，" +
+                             "二〇一〇年五月一日是重要日子，" +
+                             "二零二一年五月是项目启动时间";
+        var chineseYearExpected = new[]
+        {
+            ("二零一零年", "datetimex"),
+            ("二〇一〇年五月一日", "datetimex"),
+            ("二零二一年五月", "datetimex"),
+        };
+        RunTest(recognizer, chineseYearText, chineseYearExpected);
+
+        // ========== 11. GB18030-2022补充区块 ==========
+        Console.WriteLine("【场景十一：GB18030-2022补充区块】");
+        var gb18030Text = "二〇一〇年，" +
+                         "汉字笔画㇐是横，" +
+                         "汉字结构⿰表示左右结构，" +
+                         "汉语注音ㄅ是玻，" +
+                         "注音扩展ㆠ用于方言";
+        var gb18030Expected = new[]
+        {
+            ("二〇一〇年", "datetimex"),
+        };
+        RunTest(recognizer, gb18030Text, gb18030Expected);
+
+        // ========== 测试结果汇总 ==========
+        Console.WriteLine("\n=== 测试结果汇总 ===");
+        Console.WriteLine($"通过: {_passedCount}");
+        Console.WriteLine($"失败: {_failedCount}");
+        Console.WriteLine($"总计: {_passedCount + _failedCount}");
+
+        return _failedCount > 0 ? 1 : 0;
     }
 
-    static void ExtractAndShow(ITimeRecognizer recognizer, string text)
+    static void RunTest(ITimeRecognizer recognizer, string text, (string expectedText, string expectedType)[] expectedEntities)
     {
         Console.WriteLine($"文本: {text}");
         var entities = recognizer.Recognize(text);
+        var entitiesList = entities.OrderBy(x => x.Start).ToList();
 
-        if (entities.Count == 0)
+        // 显示识别结果
+        if (entitiesList.Count == 0)
         {
             Console.WriteLine("  → 未识别到实体");
         }
         else
         {
-            foreach (var e in entities.OrderBy(x => x.Start))
+            foreach (var e in entitiesList)
             {
                 Console.WriteLine($"  [{e.Start,3}-{e.End,3}] {e.Type,-12} => {e.Text}");
             }
         }
+
+        // 验证预期结果
+        bool allPassed = true;
+        foreach (var (expectedText, expectedType) in expectedEntities)
+        {
+            var found = entitiesList.Any(e => e.Text == expectedText && e.Type == expectedType);
+            if (found)
+            {
+                Console.WriteLine($"  ✓ 预期: [{expectedType}] {expectedText}");
+            }
+            else
+            {
+                Console.WriteLine($"  ✗ 缺失: [{expectedType}] {expectedText}");
+                allPassed = false;
+            }
+        }
+
+        if (allPassed)
+        {
+            Console.WriteLine("  通过 ✓");
+            _passedCount++;
+        }
+        else
+        {
+            Console.WriteLine("  失败 ✗");
+            _failedCount++;
+        }
         Console.WriteLine();
     }
 
-    static string MaskEntities(string text, List<TimeEntity> entities)
+    /// <summary>
+    /// 将文本中的实体替换为[类型]标记，实现脱敏
+    /// </summary>
+    static string MaskEntities(string text, IEnumerable<TimeEntity> entities)
     {
-        var sb = new System.Text.StringBuilder(text);
-        // 倒序替换避免索引偏移
-        foreach (var e in entities.OrderByDescending(x => x.Start))
+        var sorted = entities.OrderByDescending(e => e.Start).ToList();
+        var result = text;
+        foreach (var e in sorted)
         {
-            sb.Remove(e.Start, e.End - e.Start);
-            sb.Insert(e.Start, $"[{e.Type.ToUpper()}]");
+            result = result.Remove(e.Start, e.End - e.Start).Insert(e.Start, $"[{e.Type}]");
         }
-        return sb.ToString();
+        return result;
     }
 }
 ```
